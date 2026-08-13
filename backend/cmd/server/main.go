@@ -13,12 +13,17 @@ import (
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/config"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/db"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/httpapi"
+	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/migrations"
 )
 
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("load config: %v", err)
+	}
+
+	if err := db.RunMigrations(cfg.DB.URL(), migrations.FS); err != nil {
+		log.Fatalf("run migrations: %v", err)
 	}
 
 	startupCtx, cancelStartup := context.WithTimeout(context.Background(), 10*time.Second)
