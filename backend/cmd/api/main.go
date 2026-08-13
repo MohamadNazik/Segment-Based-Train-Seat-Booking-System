@@ -1,0 +1,64 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"log"
+	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/cache"
+	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/config"
+	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/db"
+	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/httpapi"
+)
+
+func main() {
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("load config: %v", err)
+	}
+
+	startupCtx, cancelStartup := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancelStartup()
+
+	pool, err := db.NewPool(startupCtx, cfg.DB.URL())
+	if err != nil {
+		log.Fatalf("connect db: %v", err)
+	}
+	defer pool.Close()
+
+	redisClient, err := cache.NewClient(startupCtx, cfg.RedisAddr)
+	if err != nil {
+		log.Fatalf("connect redis: %v", err)
+	}
+	defer redisClient.Close()
+
+	srv := &http.Server{
+		Addr:              ":" + cfg.Port,
+		Handler:           httpapi.NewRouter(),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	runCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	go func() {
+		<-runCtx.Done()
+		shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancelShutdown()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			log.Printf("graceful shutdown failed: %v", err)
+		}
+	}()
+
+	log.Printf("listening on :%s", cfg.Port)
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Fatalf("server error: %v", err)
+	}
+}

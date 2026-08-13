@@ -1,0 +1,13 @@
+.env
+
+# Go
+backend/bin/
+*.exe
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+
+# Editor
+.vscode/
+.idea/
