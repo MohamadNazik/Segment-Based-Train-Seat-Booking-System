@@ -68,8 +68,8 @@ func (s *Service) Availability(ctx context.Context, originCode, destCode string)
 	if origin == nil || destination == nil {
 		return nil, newValidationError("unknown origin or destination station code")
 	}
-	if origin.Sequence >= destination.Sequence {
-		return nil, newValidationError("origin must come before destination on the line")
+	if origin.Sequence == destination.Sequence {
+		return nil, newValidationError("origin and destination must be different stations")
 	}
 
 	reservedSeats, err := s.repo.ListReserved(ctx)
