@@ -1,0 +1,2 @@
+DROP TABLE bookings;
+DROP EXTENSION IF EXISTS btree_gist;
