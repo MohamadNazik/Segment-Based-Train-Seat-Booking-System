@@ -29,8 +29,9 @@ type Config struct {
 
 	RedisAddr string
 
-	RatePerKm float64
-	HoldTTL   time.Duration
+	RatePerKm         float64
+	FragmentationRate float64
+	HoldTTL           time.Duration
 }
 
 func Load() (*Config, error) {
@@ -61,6 +62,12 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid RATE_PER_KM: %w", err)
 	}
 	cfg.RatePerKm = rate
+
+	fragmentationRate, err := strconv.ParseFloat(getEnv("FRAGMENTATION_RATE", "0.5"), 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid FRAGMENTATION_RATE: %w", err)
+	}
+	cfg.FragmentationRate = fragmentationRate
 
 	ttlSeconds, err := strconv.Atoi(getEnv("HOLD_TTL_SECONDS", "600"))
 	if err != nil {

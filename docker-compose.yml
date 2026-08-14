@@ -39,6 +39,7 @@ services:
       DB_SSLMODE: disable
       REDIS_ADDR: redis:6379
       RATE_PER_KM: ${RATE_PER_KM}
+      FRAGMENTATION_RATE: ${FRAGMENTATION_RATE}
       HOLD_TTL_SECONDS: ${HOLD_TTL_SECONDS}
     depends_on:
       db:

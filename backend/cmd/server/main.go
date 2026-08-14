@@ -13,6 +13,8 @@ import (
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/config"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/db"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/httpapi"
+	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/seats"
+	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/stations"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/migrations"
 )
 
@@ -41,9 +43,18 @@ func main() {
 	}
 	defer redisClient.Close()
 
+	stationsRepo := stations.NewRepo(pool)
+	seatsRepo := seats.NewRepo(pool)
+	seatsService := seats.NewService(seatsRepo, stationsRepo, cfg.RatePerKm, cfg.FragmentationRate)
+
+	deps := httpapi.Deps{
+		Stations: stations.NewHandler(stationsRepo),
+		Seats:    seats.NewHandler(seatsService),
+	}
+
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           httpapi.NewRouter(),
+		Handler:           httpapi.NewRouter(deps),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,
@@ -62,7 +73,7 @@ func main() {
 		}
 	}()
 
-	log.Printf("listening on :%s", cfg.Port)
+	log.Printf("Server is listening on :%s", cfg.Port)
 	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("server error: %v", err)
 	}
