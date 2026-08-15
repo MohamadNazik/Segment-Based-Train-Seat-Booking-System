@@ -12,6 +12,7 @@ import (
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/cache"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/config"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/db"
+	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/holds"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/httpapi"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/seats"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/stations"
@@ -43,13 +44,17 @@ func main() {
 	}
 	defer redisClient.Close()
 
+	holdStore := cache.NewHoldStore(redisClient)
+
 	stationsRepo := stations.NewRepo(pool)
 	seatsRepo := seats.NewRepo(pool)
-	seatsService := seats.NewService(seatsRepo, stationsRepo, cfg.RatePerKm, cfg.FragmentationRate)
+	seatsService := seats.NewService(seatsRepo, stationsRepo, holdStore, cfg.RatePerKm, cfg.FragmentationRate)
+	holdsService := holds.NewService(seatsService, holdStore, cfg.HoldTTL)
 
 	deps := httpapi.Deps{
 		Stations: stations.NewHandler(stationsRepo),
 		Seats:    seats.NewHandler(seatsService),
+		Holds:    holds.NewHandler(holdsService),
 	}
 
 	srv := &http.Server{

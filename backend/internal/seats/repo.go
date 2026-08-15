@@ -2,7 +2,9 @@ package seats
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -44,6 +46,26 @@ func (r *Repo) ListReserved(ctx context.Context) ([]ReservedSeat, error) {
 		out = append(out, s)
 	}
 	return out, rows.Err()
+}
+
+// GetReserved looks up a single seat by ID, but only if it belongs to a
+// reserved coach - unreserved seats don't exist as rows at all, but a
+// caller-supplied ID could still point at something else entirely.
+func (r *Repo) GetReserved(ctx context.Context, seatID string) (ReservedSeat, bool, error) {
+	var s ReservedSeat
+	err := r.pool.QueryRow(ctx, `
+		SELECT s.id, c.code, s.seat_number
+		FROM seats s
+		JOIN coaches c ON c.id = s.coach_id
+		WHERE s.id = $1 AND c.type = 'reserved'
+	`, seatID).Scan(&s.ID, &s.CoachCode, &s.SeatNumber)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ReservedSeat{}, false, nil
+	}
+	if err != nil {
+		return ReservedSeat{}, false, err
+	}
+	return s, true, nil
 }
 
 // BookingsForSeats returns every booking on the given seats, grouped by
