@@ -3,6 +3,7 @@ package httpapi
 import (
 	"net/http"
 
+	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/bookings"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/holds"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/seats"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/stations"
@@ -15,6 +16,7 @@ type Deps struct {
 	Stations *stations.Handler
 	Seats    *seats.Handler
 	Holds    *holds.Handler
+	Bookings *bookings.Handler
 }
 
 func NewRouter(deps Deps) *http.ServeMux {
@@ -29,6 +31,7 @@ func NewRouter(deps Deps) *http.ServeMux {
 	mux.HandleFunc("GET /api/v1/availability", deps.Seats.Availability)
 	mux.HandleFunc("POST /api/v1/holds", deps.Holds.Create)
 	mux.HandleFunc("POST /api/v1/holds/{token}/cancel", deps.Holds.Cancel)
+	mux.HandleFunc("POST /api/v1/bookings", deps.Bookings.Create)
 
 	return mux
 }

@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/bookings"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/cache"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/config"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/db"
@@ -51,10 +52,14 @@ func main() {
 	seatsService := seats.NewService(seatsRepo, stationsRepo, holdStore, cfg.RatePerKm, cfg.FragmentationRate)
 	holdsService := holds.NewService(seatsService, holdStore, cfg.HoldTTL)
 
+	bookingsRepo := bookings.NewRepo(pool)
+	bookingsService := bookings.NewService(holdStore, bookingsRepo)
+
 	deps := httpapi.Deps{
 		Stations: stations.NewHandler(stationsRepo),
 		Seats:    seats.NewHandler(seatsService),
 		Holds:    holds.NewHandler(holdsService),
+		Bookings: bookings.NewHandler(bookingsService),
 	}
 
 	srv := &http.Server{

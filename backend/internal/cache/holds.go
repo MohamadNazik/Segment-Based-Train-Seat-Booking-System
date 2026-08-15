@@ -85,6 +85,39 @@ func (s *HoldStore) Create(ctx context.Context, seatID string, originSeq, destin
 	}, nil
 }
 
+// Get looks up a hold by token, e.g. to finalize it into a booking.
+// Returns ErrHoldNotFound if the token is unknown or has already expired.
+func (s *HoldStore) Get(ctx context.Context, token string) (Hold, error) {
+	key := holdKeyPrefix + token
+
+	data, err := s.client.Get(ctx, key).Bytes()
+	if errors.Is(err, redis.Nil) {
+		return Hold{}, ErrHoldNotFound
+	}
+	if err != nil {
+		return Hold{}, fmt.Errorf("read hold: %w", err)
+	}
+
+	var payload holdPayload
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return Hold{}, fmt.Errorf("unmarshal hold: %w", err)
+	}
+
+	var expiresAt time.Time
+	if ttl, err := s.client.TTL(ctx, key).Result(); err == nil && ttl > 0 {
+		expiresAt = time.Now().Add(ttl)
+	}
+
+	return Hold{
+		Token:          token,
+		SeatID:         payload.SeatID,
+		OriginSeq:      payload.OriginSeq,
+		DestinationSeq: payload.DestinationSeq,
+		Fare:           payload.Fare,
+		ExpiresAt:      expiresAt,
+	}, nil
+}
+
 // Cancel releases a hold immediately rather than waiting for its TTL.
 // Cancelling an already-expired or unknown token returns ErrHoldNotFound.
 func (s *HoldStore) Cancel(ctx context.Context, token string) error {
