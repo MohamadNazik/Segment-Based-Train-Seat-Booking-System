@@ -1,4 +1,5 @@
 import type { AvailableSeat, Station } from '../api/types'
+import { EMPTY_STATE, PAGE, PAGE_SUBTITLE } from '../styles'
 
 interface Props {
   origin: string
@@ -21,20 +22,25 @@ export default function CoachList({ origin, destination, date, stations, seats, 
   const coaches = [...counts.entries()].sort(([a], [b]) => a.localeCompare(b))
 
   return (
-    <section className="page">
+    <section className={PAGE}>
       <h2>
         {stationName(stations, origin)} &rarr; {stationName(stations, destination)}
       </h2>
-      <p className="page-subtitle">{date}</p>
+      <p className={PAGE_SUBTITLE}>{date}</p>
 
       {coaches.length === 0 ? (
-        <p className="empty-state">No seats available for this journey and date. Try a different date.</p>
+        <p className={EMPTY_STATE}>No seats available for this journey and date. Try a different date.</p>
       ) : (
-        <div className="coach-grid">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
           {coaches.map(([coachCode, count]) => (
-            <button key={coachCode} type="button" className="coach-card" onClick={() => onSelectCoach(coachCode)}>
-              <span className="coach-code">Coach {coachCode}</span>
-              <span className="coach-count">{count} seats available</span>
+            <button
+              key={coachCode}
+              type="button"
+              className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-5 text-left transition hover:-translate-y-0.5 hover:border-accent"
+              onClick={() => onSelectCoach(coachCode)}
+            >
+              <span className="text-lg font-bold">Coach {coachCode}</span>
+              <span className="text-sm text-ink-soft">{count} seats available</span>
             </button>
           ))}
         </div>

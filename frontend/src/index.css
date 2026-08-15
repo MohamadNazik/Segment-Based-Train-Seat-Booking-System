@@ -1,52 +1,48 @@
-:root {
-  --ink: #16221c;
-  --ink-soft: #4b5a52;
-  --bg: #f6f5f0;
-  --surface: #ffffff;
-  --border: #dedad0;
-  --accent: #1f6f4a;
-  --accent-dark: #164f35;
-  --danger: #b3261e;
-  --danger-bg: #fdecea;
+@import 'tailwindcss';
 
-  font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
-  color: var(--ink);
-  background: var(--bg);
-  -webkit-font-smoothing: antialiased;
+/* Custom design tokens - Tailwind v4 auto-generates utilities from these
+   (bg-accent, text-ink-soft, border-route-accent, etc.), so the app's
+   established palette carries over into utility classes instead of
+   falling back to Tailwind's default color scale. */
+@theme {
+  --color-ink: #16221c;
+  --color-ink-soft: #4b5a52;
+  --color-bg: #f6f5f0;
+  --color-surface: #ffffff;
+  --color-border: #dedad0;
+  --color-accent: #1f6f4a;
+  --color-accent-dark: #164f35;
+  --color-danger: #b3261e;
+  --color-danger-bg: #fdecea;
+  --color-route-accent: #2f6fed;
+  --color-route-accent-dark: #1f52c4;
 }
 
-* {
-  box-sizing: border-box;
-}
+/* Global element defaults - the one place base styling stays in CSS rather
+   than JSX, since there's no single element to attach these to otherwise
+   (body/html aren't React-managed, and every button/input in the app
+   should default to the same cursor/disabled behavior). */
+@layer base {
+  body {
+    @apply bg-bg text-ink antialiased;
+    font-family:
+      system-ui,
+      'Segoe UI',
+      Roboto,
+      sans-serif;
+  }
 
-body {
-  margin: 0;
-}
+  #root {
+    @apply flex min-h-svh flex-col;
+  }
 
-#root {
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-}
+  h1,
+  h2,
+  h3 {
+    @apply font-semibold text-ink;
+  }
 
-h1,
-h2,
-h3 {
-  color: var(--ink);
-  font-weight: 600;
-}
-
-button {
-  font: inherit;
-  cursor: pointer;
-}
-
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-input,
-select {
-  font: inherit;
+  button {
+    @apply cursor-pointer disabled:cursor-not-allowed disabled:opacity-60;
+  }
 }

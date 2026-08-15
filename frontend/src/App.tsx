@@ -1,9 +1,8 @@
-import './App.css'
 import BookingPage from './pages/BookingPage'
 
 export default function App() {
   return (
-    <main>
+    <main className="flex flex-1 flex-col">
       <BookingPage />
     </main>
   )

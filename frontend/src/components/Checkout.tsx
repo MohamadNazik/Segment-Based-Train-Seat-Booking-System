@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import type { AvailableSeat, Booking, Hold } from '../api/types'
 import { ApiError, cancelHold, createBooking } from '../api/client'
 import { useCountdown } from '../hooks/useCountdown'
+import { BTN_PRIMARY, BTN_SECONDARY, ERROR_BANNER, PAGE, PAGE_SUBTITLE } from '../styles'
 
 interface Props {
   hold: Hold
@@ -60,41 +61,64 @@ export default function Checkout({ hold, seat, onConfirmed, onReleased }: Props)
   const urgent = remaining <= 60
 
   return (
-    <section className="page">
-      <div className={`countdown-banner${urgent ? ' countdown-urgent' : ''}`} aria-live="polite">
+    <section className={PAGE}>
+      <div
+        className={`mb-6 rounded-lg border px-4 py-3 text-sm ${
+          urgent ? 'border-danger bg-danger-bg text-danger' : 'border-accent bg-accent/10 text-accent-dark'
+        }`}
+        aria-live="polite"
+      >
         Complete payment within <strong>{formatTime(remaining)}</strong> or this seat will be released
       </div>
 
       <h2>
         Coach {seat.coach_code}, Seat {seat.seat_number}
       </h2>
-      <p className="page-subtitle">Fare: LKR {hold.fare.toFixed(2)}</p>
+      <p className={PAGE_SUBTITLE}>Fare: LKR {hold.fare.toFixed(2)}</p>
 
-      <form className="checkout-form" onSubmit={handleSubmit}>
-        <h3>Passenger details</h3>
-        <div className="search-field">
-          <label htmlFor="email">Email</label>
-          <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+      <form className="grid gap-4" onSubmit={handleSubmit}>
+        <h3 className="mt-2">Passenger details</h3>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="email" className="text-sm font-semibold text-ink-soft">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="rounded-lg border border-border px-3 py-2.5"
+          />
         </div>
-        <div className="search-field">
-          <label htmlFor="mobile">Mobile</label>
-          <input id="mobile" type="tel" required value={mobile} onChange={(e) => setMobile(e.target.value)} />
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="mobile" className="text-sm font-semibold text-ink-soft">
+            Mobile
+          </label>
+          <input
+            id="mobile"
+            type="tel"
+            required
+            value={mobile}
+            onChange={(e) => setMobile(e.target.value)}
+            className="rounded-lg border border-border px-3 py-2.5"
+          />
         </div>
 
-        <h3>Payment</h3>
-        <p className="page-subtitle">This is a mock payment for demonstration purposes.</p>
+        <h3 className="mt-2">Payment</h3>
+        <p className={PAGE_SUBTITLE}>This is a mock payment for demonstration purposes.</p>
 
         {error && (
-          <p className="error-banner" role="alert">
+          <p className={ERROR_BANNER} role="alert">
             {error}
           </p>
         )}
 
-        <div className="proceed-bar">
-          <button type="button" className="secondary-button" onClick={handleCancel} disabled={cancelling || submitting}>
+        <div className="flex justify-end gap-3">
+          <button type="button" className={BTN_SECONDARY} onClick={handleCancel} disabled={cancelling || submitting}>
             Cancel
           </button>
-          <button type="submit" disabled={submitting}>
+          <button type="submit" className={BTN_PRIMARY} disabled={submitting}>
             {submitting ? 'Processing…' : `Pay LKR ${hold.fare.toFixed(2)}`}
           </button>
         </div>

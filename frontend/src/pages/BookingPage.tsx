@@ -7,6 +7,7 @@ import CoachList from '../components/CoachList'
 import SeatList from '../components/SeatList'
 import Checkout from '../components/Checkout'
 import Confirmation from '../components/Confirmation'
+import { ERROR_BANNER, PAGE } from '../styles'
 
 // The search (from/to/date) and the selected coach both live in the URL's
 // query string via react-router's useSearchParams - not component state -
@@ -143,8 +144,8 @@ export default function BookingPage() {
 
   if (stationsError) {
     return (
-      <div className="page">
-        <p className="error-banner">Unable to load stations: {stationsError}</p>
+      <div className={PAGE}>
+        <p className={ERROR_BANNER}>Unable to load stations: {stationsError}</p>
       </div>
     )
   }
@@ -167,7 +168,7 @@ export default function BookingPage() {
         onSearch={handleSearch}
       />
 
-      {hasSearch && searching && <p className="page">Loading…</p>}
+      {hasSearch && searching && <p className={PAGE}>Loading…</p>}
 
       {hasSearch && !searching && !coachCode && (
         <CoachList
@@ -183,7 +184,7 @@ export default function BookingPage() {
       {hasSearch && !searching && coachCode && (
         <>
           {notice && (
-            <p className="error-banner" role="alert">
+            <p className={ERROR_BANNER} role="alert">
               {notice}
             </p>
           )}
