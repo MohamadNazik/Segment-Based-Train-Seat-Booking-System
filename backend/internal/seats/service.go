@@ -2,15 +2,16 @@ package seats
 
 import (
 	"context"
+	"time"
 
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/cache"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/stations"
 )
 
 // ValidationError marks a failure caused by bad input (unknown station code,
-// wrong leg order) rather than an internal failure, so callers - HTTP
-// handlers today, the holds service later - can tell the two apart and
-// respond with 400 vs 500 without inspecting error strings.
+// wrong leg order, a past travel date) rather than an internal failure, so
+// callers - HTTP handlers today, the holds service later - can tell the two
+// apart and respond with 400 vs 500 without inspecting error strings.
 type ValidationError struct {
 	msg string
 }
@@ -27,11 +28,11 @@ type ErrSeatNotReserved struct{}
 func (ErrSeatNotReserved) Error() string { return "seat not found or not reservable" }
 
 // HoldReader is the seats package's view of active holds - just enough to
-// compute three-state availability and fragmentation pricing. Defined here
-// (not in cache) because Go convention is to declare interfaces where
-// they're consumed; cache.HoldStore satisfies this structurally without
-// cache importing seats, which is what keeps seats -> cache -> (nothing)
-// and holds -> seats, holds -> cache from ever forming a cycle.
+// compute availability and fragmentation pricing. Defined here (not in
+// cache) because Go convention is to declare interfaces where they're
+// consumed; cache.HoldStore satisfies this structurally without cache
+// importing seats, which is what keeps seats -> cache -> (nothing) and
+// holds -> seats, holds -> cache from ever forming a cycle.
 type HoldReader interface {
 	AllHolds(ctx context.Context) (map[string][]cache.HoldRange, error)
 }
@@ -54,9 +55,10 @@ func NewService(repo *Repo, stationsRepo *stations.Repo, holdReader HoldReader, 
 	}
 }
 
-// leg is a resolved origin/destination pair plus everything needed to price
-// any seat against it.
+// leg is a resolved origin/destination/date triple plus everything needed
+// to price any seat against it.
 type leg struct {
+	travelDate     time.Time
 	originSeq      int
 	destinationSeq int
 	firstSeq       int
@@ -64,7 +66,12 @@ type leg struct {
 	distanceBySeq  map[int]float64
 }
 
-func (s *Service) resolveLeg(ctx context.Context, originCode, destCode string) (leg, error) {
+func (s *Service) resolveLeg(ctx context.Context, originCode, destCode string, travelDate time.Time) (leg, error) {
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	if travelDate.Before(today) {
+		return leg{}, newValidationError("travel date must not be in the past")
+	}
+
 	allStations, err := s.stationsRepo.List(ctx)
 	if err != nil {
 		return leg{}, err
@@ -98,6 +105,7 @@ func (s *Service) resolveLeg(ctx context.Context, originCode, destCode string) (
 	}
 
 	return leg{
+		travelDate:     travelDate,
 		originSeq:      origin.Sequence,
 		destinationSeq: destination.Sequence,
 		firstSeq:       firstSeq,
@@ -113,7 +121,7 @@ func (s *Service) resolveLeg(ctx context.Context, originCode, destCode string) (
 // neighbors, per the plan - a pending hold boxes in capacity just as much
 // as a confirmed booking does, until it's released or expires.
 func (s *Service) priceOne(lg leg, bookings, holds []BookedRange) (status string, fare float64) {
-	requested := BookedRange{OriginSeq: lg.originSeq, DestinationSeq: lg.destinationSeq}
+	requested := BookedRange{TravelDate: lg.travelDate, OriginSeq: lg.originSeq, DestinationSeq: lg.destinationSeq}
 
 	status = "available"
 	for _, b := range bookings {
@@ -136,6 +144,7 @@ func (s *Service) priceOne(lg leg, bookings, holds []BookedRange) (status string
 	neighbors = append(neighbors, holds...)
 
 	fare = CalculateFare(FareParams{
+		TravelDate:        lg.travelDate,
 		OriginSeq:         lg.originSeq,
 		DestinationSeq:    lg.destinationSeq,
 		FirstSeq:          lg.firstSeq,
@@ -151,15 +160,17 @@ func (s *Service) priceOne(lg leg, bookings, holds []BookedRange) (status string
 func toBookedRanges(holds []cache.HoldRange) []BookedRange {
 	out := make([]BookedRange, len(holds))
 	for i, h := range holds {
-		out[i] = BookedRange{OriginSeq: h.OriginSeq, DestinationSeq: h.DestinationSeq}
+		out[i] = BookedRange{TravelDate: h.TravelDate, OriginSeq: h.OriginSeq, DestinationSeq: h.DestinationSeq}
 	}
 	return out
 }
 
-// Availability resolves a leg by station code and returns every reserved
-// seat's status (available/pending/booked) and priced fare for it.
-func (s *Service) Availability(ctx context.Context, originCode, destCode string) ([]Availability, error) {
-	lg, err := s.resolveLeg(ctx, originCode, destCode)
+// Availability resolves a leg by station code and date, returning every
+// reserved seat that's actually available for it with its priced fare.
+// Booked and pending seats are deliberately left out of the response -
+// only bookable seats are ever shown to the passenger.
+func (s *Service) Availability(ctx context.Context, originCode, destCode string, travelDate time.Time) ([]Availability, error) {
+	lg, err := s.resolveLeg(ctx, originCode, destCode, travelDate)
 	if err != nil {
 		return nil, err
 	}
@@ -187,6 +198,9 @@ func (s *Service) Availability(ctx context.Context, originCode, destCode string)
 	result := make([]Availability, 0, len(reservedSeats))
 	for _, seat := range reservedSeats {
 		status, fare := s.priceOne(lg, bookingsBySeat[seat.ID], toBookedRanges(holdsBySeat[seat.ID]))
+		if status != "available" {
+			continue
+		}
 
 		result = append(result, Availability{
 			SeatID:     seat.ID,
@@ -204,6 +218,7 @@ func (s *Service) Availability(ctx context.Context, originCode, destCode string)
 // holds service needs to decide whether a hold can be created and, if so,
 // what to lock in.
 type LegPrice struct {
+	TravelDate     time.Time
 	OriginSeq      int
 	DestinationSeq int
 	Status         string
@@ -212,9 +227,11 @@ type LegPrice struct {
 
 // CheckSeat is Availability narrowed to a single seat, reused by the holds
 // service so hold creation is checked and priced with the exact same rules
-// a passenger already saw in the availability list.
-func (s *Service) CheckSeat(ctx context.Context, seatID, originCode, destCode string) (LegPrice, error) {
-	lg, err := s.resolveLeg(ctx, originCode, destCode)
+// a passenger already saw in the availability list. Unlike Availability,
+// this returns the seat's actual status (including "booked"/"pending")
+// rather than filtering - the caller needs to know why a hold was refused.
+func (s *Service) CheckSeat(ctx context.Context, seatID, originCode, destCode string, travelDate time.Time) (LegPrice, error) {
+	lg, err := s.resolveLeg(ctx, originCode, destCode, travelDate)
 	if err != nil {
 		return LegPrice{}, err
 	}
@@ -238,6 +255,7 @@ func (s *Service) CheckSeat(ctx context.Context, seatID, originCode, destCode st
 	status, fare := s.priceOne(lg, bookingsBySeat[seatID], toBookedRanges(holdsBySeat[seatID]))
 
 	return LegPrice{
+		TravelDate:     lg.travelDate,
 		OriginSeq:      lg.originSeq,
 		DestinationSeq: lg.destinationSeq,
 		Status:         status,

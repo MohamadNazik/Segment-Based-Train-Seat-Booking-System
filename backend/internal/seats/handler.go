@@ -5,6 +5,9 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"time"
+
+	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/apiformat"
 )
 
 type Handler struct {
@@ -15,16 +18,23 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
-// Availability handles GET /api/availability?origin=CODE&destination=CODE.
+// Availability handles GET /api/v1/availability?origin=CODE&destination=CODE&date=YYYY-MM-DD.
 func (h *Handler) Availability(w http.ResponseWriter, r *http.Request) {
 	originCode := r.URL.Query().Get("origin")
 	destCode := r.URL.Query().Get("destination")
-	if originCode == "" || destCode == "" {
-		http.Error(w, "origin and destination query params are required", http.StatusBadRequest)
+	dateStr := r.URL.Query().Get("date")
+	if originCode == "" || destCode == "" || dateStr == "" {
+		http.Error(w, "origin, destination, and date query params are required", http.StatusBadRequest)
 		return
 	}
 
-	result, err := h.service.Availability(r.Context(), originCode, destCode)
+	travelDate, err := time.Parse(apiformat.DateFormat, dateStr)
+	if err != nil {
+		http.Error(w, "date must be in YYYY-MM-DD format", http.StatusBadRequest)
+		return
+	}
+
+	result, err := h.service.Availability(r.Context(), originCode, destCode, travelDate)
 	if err != nil {
 		var valErr *ValidationError
 		if errors.As(err, &valErr) {

@@ -46,7 +46,7 @@ func (s *Service) FinalizeBooking(ctx context.Context, token, email, mobile stri
 
 	mockPay()
 
-	booking, insertErr := s.repo.Insert(ctx, h.SeatID, h.OriginSeq, h.DestinationSeq, email, mobile, h.Fare)
+	booking, insertErr := s.repo.Insert(ctx, h.SeatID, h.OriginSeq, h.DestinationSeq, h.TravelDate, email, mobile, h.Fare)
 
 	if cancelErr := s.holds.Cancel(ctx, token); cancelErr != nil && !errors.Is(cancelErr, cache.ErrHoldNotFound) {
 		log.Printf("bookings.FinalizeBooking: release hold %s: %v", token, cancelErr)

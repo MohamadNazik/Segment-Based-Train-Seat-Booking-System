@@ -1,10 +1,13 @@
 package seats
 
-// BookedRange is an existing booking's occupied leg on a seat, in the
-// direction it was actually traveled: OriginSeq is where the passenger
+import "time"
+
+// BookedRange is an existing booking's occupied leg on a seat and date, in
+// the direction it was actually traveled: OriginSeq is where the passenger
 // boards, DestinationSeq is where they alight - so OriginSeq > DestinationSeq
 // for an inbound (e.g. Badulla -> Colombo Fort) booking.
 type BookedRange struct {
+	TravelDate     time.Time
 	OriginSeq      int
 	DestinationSeq int
 }
@@ -24,10 +27,14 @@ func (a BookedRange) minMax() (int, int) {
 	return a.DestinationSeq, a.OriginSeq
 }
 
-// Overlaps reports whether two legs conflict: same travel direction and
-// sharing at least one station. An outbound and an inbound leg never
-// conflict, even over the same stations, since they're different trips.
+// Overlaps reports whether two legs conflict: same travel date, same
+// direction, and sharing at least one station. Different dates never
+// conflict (different trips entirely), and neither do opposite directions
+// on the same date, even over the same stations.
 func (a BookedRange) Overlaps(b BookedRange) bool {
+	if !a.TravelDate.Equal(b.TravelDate) {
+		return false
+	}
 	if a.Outbound() != b.Outbound() {
 		return false
 	}
@@ -36,12 +43,15 @@ func (a BookedRange) Overlaps(b BookedRange) bool {
 	return aMin < bMax && bMin < aMax
 }
 
-// Availability is one reserved seat's status and priced fare for a
-// requested leg.
+// Availability is one reserved seat's priced fare for a requested leg.
+// Only available seats are ever returned to the client - see
+// Service.Availability - so Status is always "available" today, but kept
+// as an explicit field rather than removed, since a future seat-map view
+// showing taken seats would need it back.
 type Availability struct {
 	SeatID     string  `json:"seat_id"`
 	CoachCode  string  `json:"coach_code"`
 	SeatNumber int     `json:"seat_number"`
-	Status     string  `json:"status"` // "available" | "booked"
+	Status     string  `json:"status"`
 	Fare       float64 `json:"fare"`
 }

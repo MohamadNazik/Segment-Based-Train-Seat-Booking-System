@@ -6,6 +6,7 @@ import "time"
 type Booking struct {
 	ID             string    `json:"id"`
 	SeatID         string    `json:"seat_id"`
+	TravelDate     string    `json:"travel_date"`
 	OriginSeq      int       `json:"origin_seq"`
 	DestinationSeq int       `json:"destination_seq"`
 	Email          string    `json:"email"`

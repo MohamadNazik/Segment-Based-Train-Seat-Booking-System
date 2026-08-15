@@ -79,7 +79,7 @@ func (r *Repo) BookingsForSeats(ctx context.Context, seatIDs []string) (map[stri
 	}
 
 	rows, err := r.pool.Query(ctx, `
-		SELECT seat_id, origin_seq, destination_seq
+		SELECT seat_id, origin_seq, destination_seq, travel_date
 		FROM bookings
 		WHERE seat_id = ANY($1)
 	`, seatIDs)
@@ -91,7 +91,7 @@ func (r *Repo) BookingsForSeats(ctx context.Context, seatIDs []string) (map[stri
 	for rows.Next() {
 		var seatID string
 		var br BookedRange
-		if err := rows.Scan(&seatID, &br.OriginSeq, &br.DestinationSeq); err != nil {
+		if err := rows.Scan(&seatID, &br.OriginSeq, &br.DestinationSeq, &br.TravelDate); err != nil {
 			return nil, err
 		}
 		out[seatID] = append(out[seatID], br)

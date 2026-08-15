@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/apiformat"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/cache"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/seats"
 )
@@ -27,7 +28,7 @@ var (
 // so the service depends on a narrow interface rather than the concrete
 // Redis-backed type.
 type Store interface {
-	Create(ctx context.Context, seatID string, originSeq, destinationSeq int, fare float64, ttl time.Duration) (cache.Hold, error)
+	Create(ctx context.Context, seatID string, originSeq, destinationSeq int, travelDate time.Time, fare float64, ttl time.Duration) (cache.Hold, error)
 	Cancel(ctx context.Context, token string) error
 	Lock(ctx context.Context, seatID string) (func(context.Context) error, error)
 }
@@ -42,8 +43,9 @@ func NewService(seatsService *seats.Service, store Store, ttl time.Duration) *Se
 	return &Service{seats: seatsService, store: store, ttl: ttl}
 }
 
-// CreateHold prices seatID for the requested leg using the exact same rules
-// as availability and, if it's genuinely available right now, reserves it.
+// CreateHold prices seatID for the requested leg and date using the exact
+// same rules as availability and, if it's genuinely available right now,
+// reserves it.
 //
 // The per-seat lock is what makes two concurrent requests for the same or
 // overlapping segment safe: both might see "available" if they checked at
@@ -51,14 +53,14 @@ func NewService(seatsService *seats.Service, store Store, ttl time.Duration) *Se
 // acquires it first prices and creates the hold inside the lock; the second
 // blocks until the first releases it, then re-prices from scratch and finds
 // the seat no longer available.
-func (s *Service) CreateHold(ctx context.Context, seatID, originCode, destCode string) (Hold, error) {
+func (s *Service) CreateHold(ctx context.Context, seatID, originCode, destCode string, travelDate time.Time) (Hold, error) {
 	unlock, err := s.store.Lock(ctx, seatID)
 	if err != nil {
 		return Hold{}, fmt.Errorf("lock seat: %w", err)
 	}
 	defer unlock(ctx)
 
-	price, err := s.seats.CheckSeat(ctx, seatID, originCode, destCode)
+	price, err := s.seats.CheckSeat(ctx, seatID, originCode, destCode, travelDate)
 	if err != nil {
 		var notReserved seats.ErrSeatNotReserved
 		if errors.As(err, &notReserved) {
@@ -71,12 +73,17 @@ func (s *Service) CreateHold(ctx context.Context, seatID, originCode, destCode s
 		return Hold{}, &ErrConflict{msg: fmt.Sprintf("seat is %s for this leg", price.Status)}
 	}
 
-	h, err := s.store.Create(ctx, seatID, price.OriginSeq, price.DestinationSeq, price.Fare, s.ttl)
+	h, err := s.store.Create(ctx, seatID, price.OriginSeq, price.DestinationSeq, price.TravelDate, price.Fare, s.ttl)
 	if err != nil {
 		return Hold{}, err
 	}
 
-	return Hold{Token: h.Token, Fare: h.Fare, ExpiresAt: h.ExpiresAt}, nil
+	return Hold{
+		Token:      h.Token,
+		TravelDate: h.TravelDate.Format(apiformat.DateFormat),
+		Fare:       h.Fare,
+		ExpiresAt:  h.ExpiresAt,
+	}, nil
 }
 
 // CancelHold releases a hold immediately. No seat lock is needed here -

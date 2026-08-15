@@ -5,7 +5,9 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"time"
 
+	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/apiformat"
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/seats"
 )
 
@@ -21,6 +23,7 @@ type createRequest struct {
 	SeatID      string `json:"seat_id"`
 	Origin      string `json:"origin"`
 	Destination string `json:"destination"`
+	Date        string `json:"date"`
 }
 
 // Create handles POST /api/v1/holds.
@@ -30,12 +33,18 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
-	if req.SeatID == "" || req.Origin == "" || req.Destination == "" {
-		http.Error(w, "seat_id, origin, and destination are required", http.StatusBadRequest)
+	if req.SeatID == "" || req.Origin == "" || req.Destination == "" || req.Date == "" {
+		http.Error(w, "seat_id, origin, destination, and date are required", http.StatusBadRequest)
 		return
 	}
 
-	hold, err := h.service.CreateHold(r.Context(), req.SeatID, req.Origin, req.Destination)
+	travelDate, err := time.Parse(apiformat.DateFormat, req.Date)
+	if err != nil {
+		http.Error(w, "date must be in YYYY-MM-DD format", http.StatusBadRequest)
+		return
+	}
+
+	hold, err := h.service.CreateHold(r.Context(), req.SeatID, req.Origin, req.Destination, travelDate)
 	if err != nil {
 		var valErr *seats.ValidationError
 		var conflictErr *ErrConflict

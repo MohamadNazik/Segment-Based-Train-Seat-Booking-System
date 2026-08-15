@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
+	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/apiformat"
 )
 
 var ErrHoldNotFound = errors.New("hold not found")
@@ -20,6 +22,7 @@ var ErrHoldNotFound = errors.New("hold not found")
 // pricing) and holds (which writes them), without either package importing
 // the other.
 type HoldRange struct {
+	TravelDate     time.Time
 	OriginSeq      int
 	DestinationSeq int
 }
@@ -28,6 +31,7 @@ type HoldRange struct {
 type Hold struct {
 	Token          string
 	SeatID         string
+	TravelDate     time.Time
 	OriginSeq      int
 	DestinationSeq int
 	Fare           float64
@@ -36,6 +40,7 @@ type Hold struct {
 
 type holdPayload struct {
 	SeatID         string  `json:"seat_id"`
+	TravelDate     string  `json:"travel_date"`
 	OriginSeq      int     `json:"origin_seq"`
 	DestinationSeq int     `json:"destination_seq"`
 	Fare           float64 `json:"fare"`
@@ -59,13 +64,19 @@ func NewHoldStore(client *redis.Client) *HoldStore {
 // Create writes a new hold with the given TTL and returns it, including a
 // fresh opaque token that's both the Redis key suffix and the caller's proof
 // of ownership for later cancel/finalize requests.
-func (s *HoldStore) Create(ctx context.Context, seatID string, originSeq, destinationSeq int, fare float64, ttl time.Duration) (Hold, error) {
+func (s *HoldStore) Create(ctx context.Context, seatID string, originSeq, destinationSeq int, travelDate time.Time, fare float64, ttl time.Duration) (Hold, error) {
 	token, err := randomToken()
 	if err != nil {
 		return Hold{}, fmt.Errorf("generate hold token: %w", err)
 	}
 
-	payload := holdPayload{SeatID: seatID, OriginSeq: originSeq, DestinationSeq: destinationSeq, Fare: fare}
+	payload := holdPayload{
+		SeatID:         seatID,
+		TravelDate:     travelDate.Format(apiformat.DateFormat),
+		OriginSeq:      originSeq,
+		DestinationSeq: destinationSeq,
+		Fare:           fare,
+	}
 	data, err := json.Marshal(payload)
 	if err != nil {
 		return Hold{}, fmt.Errorf("marshal hold: %w", err)
@@ -78,6 +89,7 @@ func (s *HoldStore) Create(ctx context.Context, seatID string, originSeq, destin
 	return Hold{
 		Token:          token,
 		SeatID:         seatID,
+		TravelDate:     travelDate,
 		OriginSeq:      originSeq,
 		DestinationSeq: destinationSeq,
 		Fare:           fare,
@@ -103,6 +115,11 @@ func (s *HoldStore) Get(ctx context.Context, token string) (Hold, error) {
 		return Hold{}, fmt.Errorf("unmarshal hold: %w", err)
 	}
 
+	travelDate, err := time.Parse(apiformat.DateFormat, payload.TravelDate)
+	if err != nil {
+		return Hold{}, fmt.Errorf("parse stored travel date: %w", err)
+	}
+
 	var expiresAt time.Time
 	if ttl, err := s.client.TTL(ctx, key).Result(); err == nil && ttl > 0 {
 		expiresAt = time.Now().Add(ttl)
@@ -111,6 +128,7 @@ func (s *HoldStore) Get(ctx context.Context, token string) (Hold, error) {
 	return Hold{
 		Token:          token,
 		SeatID:         payload.SeatID,
+		TravelDate:     travelDate,
 		OriginSeq:      payload.OriginSeq,
 		DestinationSeq: payload.DestinationSeq,
 		Fare:           payload.Fare,
@@ -153,7 +171,13 @@ func (s *HoldStore) AllHolds(ctx context.Context) (map[string][]HoldRange, error
 			return nil, fmt.Errorf("unmarshal hold: %w", err)
 		}
 
+		travelDate, err := time.Parse(apiformat.DateFormat, payload.TravelDate)
+		if err != nil {
+			return nil, fmt.Errorf("parse stored travel date: %w", err)
+		}
+
 		result[payload.SeatID] = append(result[payload.SeatID], HoldRange{
+			TravelDate:     travelDate,
 			OriginSeq:      payload.OriginSeq,
 			DestinationSeq: payload.DestinationSeq,
 		})

@@ -1,11 +1,15 @@
 package seats
 
-import "math"
+import (
+	"math"
+	"time"
+)
 
 // FareParams bundles the station-derived inputs the fare calculation needs.
 // OriginSeq/DestinationSeq are the candidate leg's actual boarding/alighting
 // stations - OriginSeq may be greater than DestinationSeq for an inbound leg.
 type FareParams struct {
+	TravelDate        time.Time
 	OriginSeq         int
 	DestinationSeq    int
 	FirstSeq          int // sequence of the line's first station
@@ -28,7 +32,7 @@ type FareParams struct {
 // A seat with no bookings in this direction never carries a surcharge,
 // regardless of which sub-leg is requested.
 func CalculateFare(p FareParams, seatBookings []BookedRange) float64 {
-	candidate := BookedRange{OriginSeq: p.OriginSeq, DestinationSeq: p.DestinationSeq}
+	candidate := BookedRange{TravelDate: p.TravelDate, OriginSeq: p.OriginSeq, DestinationSeq: p.DestinationSeq}
 	candidateMin, candidateMax := candidate.minMax()
 
 	fare := p.RatePerKm * math.Abs(p.DistanceBySeq[p.DestinationSeq]-p.DistanceBySeq[p.OriginSeq])
@@ -36,8 +40,8 @@ func CalculateFare(p FareParams, seatBookings []BookedRange) float64 {
 	leftBound := p.FirstSeq
 	rightBound := p.LastSeq
 	for _, b := range seatBookings {
-		if b.Outbound() != candidate.Outbound() {
-			continue // different trip direction - not a neighbor on this timeline
+		if !b.TravelDate.Equal(candidate.TravelDate) || b.Outbound() != candidate.Outbound() {
+			continue // different date or trip direction - not a neighbor on this timeline
 		}
 		bMin, bMax := b.minMax()
 		if bMax <= candidateMin && bMax > leftBound {
