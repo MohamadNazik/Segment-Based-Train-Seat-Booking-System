@@ -7,14 +7,13 @@ interface Props {
   stations: Station[]
   seats: AvailableSeat[]
   onSelectCoach: (coachCode: string) => void
-  onBack: () => void
 }
 
 function stationName(stations: Station[], code: string): string {
   return stations.find((s) => s.code === code)?.name ?? code
 }
 
-export default function CoachList({ origin, destination, date, stations, seats, onSelectCoach, onBack }: Props) {
+export default function CoachList({ origin, destination, date, stations, seats, onSelectCoach }: Props) {
   const counts = new Map<string, number>()
   for (const seat of seats) {
     counts.set(seat.coach_code, (counts.get(seat.coach_code) ?? 0) + 1)
@@ -23,10 +22,6 @@ export default function CoachList({ origin, destination, date, stations, seats, 
 
   return (
     <section className="page">
-      <button type="button" className="link-button" onClick={onBack}>
-        &larr; Change search
-      </button>
-
       <h2>
         {stationName(stations, origin)} &rarr; {stationName(stations, destination)}
       </h2>

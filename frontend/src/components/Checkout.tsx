@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import type { AvailableSeat, Booking, Hold } from '../api/types'
 import { ApiError, cancelHold, createBooking } from '../api/client'
-import { useCountdown } from '../useCountdown'
+import { useCountdown } from '../hooks/useCountdown'
 
 interface Props {
   hold: Hold

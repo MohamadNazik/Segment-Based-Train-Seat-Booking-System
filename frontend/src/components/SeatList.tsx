@@ -1,7 +1,11 @@
 import { useState } from 'react'
-import type { AvailableSeat } from '../api/types'
+import type { AvailableSeat, Station } from '../api/types'
 
 interface Props {
+  origin: string
+  destination: string
+  date: string
+  stations: Station[]
   coachCode: string
   seats: AvailableSeat[]
   busy: boolean
@@ -9,7 +13,11 @@ interface Props {
   onBack: () => void
 }
 
-export default function SeatList({ coachCode, seats, busy, onProceed, onBack }: Props) {
+function stationName(stations: Station[], code: string): string {
+  return stations.find((s) => s.code === code)?.name ?? code
+}
+
+export default function SeatList({ origin, destination, date, stations, coachCode, seats, busy, onProceed, onBack }: Props) {
   const [selectedSeatId, setSelectedSeatId] = useState<string | null>(null)
 
   const coachSeats = seats.filter((s) => s.coach_code === coachCode).sort((a, b) => a.seat_number - b.seat_number)
@@ -17,11 +25,18 @@ export default function SeatList({ coachCode, seats, busy, onProceed, onBack }: 
 
   return (
     <section className="page">
-      <button type="button" className="link-button" onClick={onBack}>
-        &larr; Back to coaches
-      </button>
+      <h2>
+        {stationName(stations, origin)} &rarr; {stationName(stations, destination)}
+      </h2>
+      <p className="page-subtitle">{date}</p>
 
-      <h2>Coach {coachCode}</h2>
+      <nav className="breadcrumb" aria-label="Breadcrumb">
+        <button type="button" className="breadcrumb-link" onClick={onBack}>
+          Coaches
+        </button>
+        <span className="breadcrumb-separator">&rsaquo;</span>
+        <span className="breadcrumb-current">{coachCode}</span>
+      </nav>
 
       <div className="seat-grid">
         {coachSeats.map((seat) => (
