@@ -142,7 +142,7 @@ export default function LandingSearch({ stations, searching, error, activeSearch
 
             <button
               type="submit"
-              className="flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-route-accent px-5.5 font-bold text-white hover:enabled:bg-route-accent-dark sm:w-auto sm:flex-none sm:rounded-[10px]"
+              className="flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-accent px-5.5 font-bold text-white hover:enabled:bg-accent-dark sm:w-auto sm:flex-none sm:rounded-[10px]"
               disabled={!canSearch}
             >
               <SearchIcon />
