@@ -22,24 +22,8 @@ interface Props {
   onSearch: (origin: string, destination: string, date: string) => void
 }
 
-// The two most commonly searched legs on this line, shown in both
-// directions as one-click shortcuts - not a separate feature, just a
-// faster path through the same search. Both directions are offered
-// deliberately, since reverse-direction bookings are a first-class part
-// of this system, not an afterthought.
-const QUICK_ROUTES: Array<{ origin: string; destination: string }> = [
-  { origin: 'COL', destination: 'KAN' },
-  { origin: 'KAN', destination: 'COL' },
-  { origin: 'COL', destination: 'ELL' },
-  { origin: 'ELL', destination: 'COL' },
-]
-
 function today(): string {
   return new Date().toISOString().slice(0, 10)
-}
-
-function stationName(stations: Station[], code: string): string {
-  return stations.find((s) => s.code === code)?.name ?? code
 }
 
 // Stand-in for a real photo of the line - see README for swapping in a
@@ -69,12 +53,6 @@ export default function LandingSearch({ stations, searching, error, activeSearch
   }, [activeSearch])
 
   const canSearch = origin !== '' && destination !== '' && origin !== destination && date !== '' && !searching
-
-  function handleQuickRoute(o: string, d: string) {
-    setOrigin(o)
-    setDestination(d)
-    if (!searching) onSearch(o, d, date)
-  }
 
   function handleSwap() {
     setOrigin(destination)
@@ -196,27 +174,6 @@ export default function LandingSearch({ stations, searching, error, activeSearch
           <p className={ERROR_BANNER} role="alert">
             {error}
           </p>
-        )}
-
-        {stations.length > 0 && (
-          <div className="mx-auto flex max-w-225 flex-wrap justify-start gap-2.5 sm:justify-center">
-            {QUICK_ROUTES.map(({ origin: o, destination: d }) => {
-              const active = origin === o && destination === d
-              return (
-                <button
-                  key={`${o}-${d}`}
-                  type="button"
-                  className={`rounded-full border-[1.5px] bg-surface px-4.5 py-2.5 text-sm font-semibold ${
-                    active ? 'border-route-accent text-route-accent' : 'border-border text-ink hover:border-route-accent'
-                  }`}
-                  disabled={searching}
-                  onClick={() => handleQuickRoute(o, d)}
-                >
-                  {stationName(stations, o)} &rarr; {stationName(stations, d)}
-                </button>
-              )
-            })}
-          </div>
         )}
       </div>
     </>
