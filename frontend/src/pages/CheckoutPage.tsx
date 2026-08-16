@@ -58,7 +58,7 @@ export default function CheckoutPage() {
       // confirmation can never return to this now-spent checkout form, and
       // lands on a fresh search instead of the mid-flow seat list.
       navigate('/', { replace: true })
-      navigate(`/booking/${booking.id}`, { state: { booking } })
+      navigate(`/bookings/${booking.id}`, { state: { booking } })
     } catch (err) {
       if (err instanceof ApiError && (err.status === 409 || err.status === 410)) {
         release(returnTo, 'This seat is no longer available. Please select a seat again.')

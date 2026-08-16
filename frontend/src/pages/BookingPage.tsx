@@ -8,7 +8,7 @@ import SeatList from '../components/SeatList'
 import { ERROR_BANNER, PAGE } from '../styles'
 
 // Handed back from /checkout via navigation state when a hold is released -
-// never via the URL. A successful checkout goes straight to /booking/:id
+// never via the URL. A successful checkout goes straight to /bookings/:id
 // instead of landing back here.
 interface IncomingState {
   notice?: string

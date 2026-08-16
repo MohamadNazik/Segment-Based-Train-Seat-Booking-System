@@ -247,6 +247,6 @@ All routes are under `/api/v1/`.
 
 ![Checkout page - passenger details and mock payment](docs/screenshots/checkout.jpg)
 
-**Confirmation**, on its own shareable `/booking/{id}` route:
+**Confirmation**, on its own shareable `/bookings/{id}` route:
 
 ![Booking confirmation page](docs/screenshots/confirm.png)

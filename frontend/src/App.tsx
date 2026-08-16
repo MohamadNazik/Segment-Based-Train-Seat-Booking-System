@@ -9,7 +9,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<BookingPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
-        <Route path="/booking/:id" element={<BookingConfirmationPage />} />
+        <Route path="/bookings/:id" element={<BookingConfirmationPage />} />
       </Routes>
     </main>
   )
