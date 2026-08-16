@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -49,6 +50,33 @@ func (r *Repo) Insert(ctx context.Context, seatID string, originSeq, destination
 			return Booking{}, ErrConflict
 		}
 		return Booking{}, fmt.Errorf("insert booking: %w", err)
+	}
+
+	b.TravelDate = storedTravelDate.Format(apiformat.DateFormat)
+	return b, nil
+}
+
+// ErrNotFound means no booking exists with the given ID.
+var ErrNotFound = errors.New("booking not found")
+
+// GetByID looks up a confirmed booking by its ID - the only thing standing
+// in for auth in this no-login system is the ID itself being an
+// unguessable UUID, the same trust model as a real ticket reference number.
+func (r *Repo) GetByID(ctx context.Context, id string) (Booking, error) {
+	var b Booking
+	var storedTravelDate time.Time
+	err := r.pool.QueryRow(ctx, `
+		SELECT id, seat_id, origin_seq, destination_seq, travel_date, email, mobile, fare, created_at
+		FROM bookings
+		WHERE id = $1
+	`, id).Scan(
+		&b.ID, &b.SeatID, &b.OriginSeq, &b.DestinationSeq, &storedTravelDate, &b.Email, &b.Mobile, &b.Fare, &b.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Booking{}, ErrNotFound
+		}
+		return Booking{}, fmt.Errorf("get booking: %w", err)
 	}
 
 	b.TravelDate = storedTravelDate.Format(apiformat.DateFormat)

@@ -55,3 +55,7 @@ export function createBooking(holdToken: string, email: string, mobile: string):
     body: JSON.stringify({ hold_token: holdToken, email, mobile }),
   })
 }
+
+export function getBooking(id: string): Promise<Booking> {
+  return request(`/bookings/${id}`)
+}

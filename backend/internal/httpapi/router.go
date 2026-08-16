@@ -32,6 +32,7 @@ func NewRouter(deps Deps) *http.ServeMux {
 	mux.HandleFunc("POST /api/v1/holds", deps.Holds.Create)
 	mux.HandleFunc("POST /api/v1/holds/{token}/cancel", deps.Holds.Cancel)
 	mux.HandleFunc("POST /api/v1/bookings", deps.Bookings.Create)
+	mux.HandleFunc("GET /api/v1/bookings/{id}", deps.Bookings.Get)
 
 	return mux
 }

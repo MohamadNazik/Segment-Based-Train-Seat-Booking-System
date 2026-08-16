@@ -63,3 +63,9 @@ func (s *Service) FinalizeBooking(ctx context.Context, token, email, mobile stri
 // flow. "Cancel" is the real, testable path that exercises releasing a hold
 // early; a separate simulated-failure path isn't needed to prove that logic.
 func mockPay() {}
+
+// GetBooking looks up a confirmed booking by ID, for the standalone
+// confirmation page (refreshable/shareable via a link, unlike checkout).
+func (s *Service) GetBooking(ctx context.Context, id string) (Booking, error) {
+	return s.repo.GetByID(ctx, id)
+}

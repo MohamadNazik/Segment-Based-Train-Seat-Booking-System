@@ -53,3 +53,24 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		log.Printf("bookings.Create: encode response: %v", err)
 	}
 }
+
+// Get handles GET /api/v1/bookings/{id}.
+func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	booking, err := h.service.GetBooking(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		log.Printf("bookings.Get: %v", err)
+		http.Error(w, "failed to load booking", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(booking); err != nil {
+		log.Printf("bookings.Get: encode response: %v", err)
+	}
+}
