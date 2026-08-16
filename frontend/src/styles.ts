@@ -1,3 +1,16 @@
+import heroImage from './assets/hero.jpg'
+
+// Shared hero background (landing + checkout): the photo, a green brand
+// tint, and a dark vignette on top for text legibility.
+export const HERO_BACKGROUND = {
+  backgroundImage:
+    'linear-gradient(to bottom, rgba(10,20,15,0.55) 0%, rgba(10,20,15,0.25) 45%, rgba(10,20,15,0.65) 100%), ' +
+    'linear-gradient(rgba(31,111,74,0.55), rgba(31,111,74,0.55)), ' +
+    `url(${heroImage})`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+}
+
 // Tailwind utility strings repeated identically across several components,
 // kept as plain constants (not wrapper components) to avoid drift.
 export const PAGE = 'mx-auto w-full max-w-[900px] px-6 pb-16 pt-8'

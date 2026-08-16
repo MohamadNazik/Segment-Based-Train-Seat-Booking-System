@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import type { AvailableSeat, Hold } from '../api/types'
 import { ApiError, cancelHold, createBooking } from '../api/client'
 import { useCountdown } from '../hooks/useCountdown'
-import { BTN_PRIMARY, BTN_SECONDARY, ERROR_BANNER } from '../styles'
+import { BTN_PRIMARY, BTN_SECONDARY, ERROR_BANNER, HERO_BACKGROUND } from '../styles'
 
 // Handed over via navigation state, not the URL - a hold token shouldn't be
 // shareable. returnTo is the seat list to return to when the hold is released.
@@ -11,13 +11,6 @@ interface CheckoutState {
   hold: Hold
   seat: AvailableSeat
   returnTo: string
-}
-
-// Same gradient as the landing hero - see LandingSearch.tsx.
-const HERO_BACKGROUND = {
-  backgroundImage:
-    'linear-gradient(to bottom, rgba(10,20,15,0.55) 0%, rgba(10,20,15,0.25) 45%, rgba(10,20,15,0.65) 100%), ' +
-    'radial-gradient(circle at 25% 15%, #3d8a5c 0%, #1c5c3a 45%, #0a2e1c 100%)',
 }
 
 function formatTime(totalSeconds: number): string {

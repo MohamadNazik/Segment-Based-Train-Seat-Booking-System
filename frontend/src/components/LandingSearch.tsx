@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Station } from '../api/types'
 import { CalendarIcon, PinIcon, SearchIcon, SwapIcon } from './icons'
-import { ERROR_BANNER } from '../styles'
+import { ERROR_BANNER, HERO_BACKGROUND } from '../styles'
 
 interface ActiveSearch {
   origin: string
@@ -21,14 +21,6 @@ interface Props {
 
 function today(): string {
   return new Date().toISOString().slice(0, 10)
-}
-
-// Stand-in for a real photo of the line - see README. Inline style since a
-// two-layer gradient doesn't map cleanly to a Tailwind utility.
-const HERO_BACKGROUND = {
-  backgroundImage:
-    'linear-gradient(to bottom, rgba(10,20,15,0.55) 0%, rgba(10,20,15,0.25) 45%, rgba(10,20,15,0.65) 100%), ' +
-    'radial-gradient(circle at 25% 15%, #3d8a5c 0%, #1c5c3a 45%, #0a2e1c 100%)',
 }
 
 export default function LandingSearch({ stations, searching, error, activeSearch, onSearch }: Props) {
