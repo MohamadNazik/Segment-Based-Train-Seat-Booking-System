@@ -93,73 +93,75 @@ export default function LandingSearch({ stations, searching, error, activeSearch
           </p>
 
           <form
-            className="mt-5 flex w-full items-end gap-3 rounded-[18px] bg-[#f2efe8] p-5 text-left shadow-[0_20px_40px_rgba(0,0,0,0.25)]"
+            className="mt-5 flex w-full flex-col items-stretch gap-3 rounded-[18px] bg-[#f2efe8] p-5 text-left shadow-[0_20px_40px_rgba(0,0,0,0.25)] sm:flex-row sm:items-end"
             onSubmit={(e) => {
               e.preventDefault()
               if (canSearch) onSearch(origin, destination, date)
             }}
           >
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <label htmlFor="origin" className="text-xs font-bold uppercase tracking-wide text-ink-soft">
-                From
-              </label>
-              <div className="flex items-center gap-2 rounded-[10px] border border-border bg-surface px-3 py-2.5 text-ink-soft">
-                <PinIcon />
-                <select
-                  id="origin"
-                  value={origin}
-                  onChange={(e) => setOrigin(e.target.value)}
-                  required
-                  className="min-w-0 flex-1 border-none bg-transparent text-[0.95rem] text-ink outline-none"
-                >
-                  <option value="" disabled>
-                    Select station
-                  </option>
-                  {stations.map((s) => (
-                    <option key={s.id} value={s.code} disabled={s.code === destination}>
-                      {s.name}
+            <div className="relative flex flex-col gap-3 sm:contents">
+              <div className="flex min-w-0 flex-col gap-1.5 sm:flex-1">
+                <label htmlFor="origin" className="text-xs font-bold uppercase tracking-wide text-ink-soft">
+                  From
+                </label>
+                <div className="flex items-center gap-2 rounded-[10px] border border-border bg-surface px-3 py-2.5 text-ink-soft">
+                  <PinIcon />
+                  <select
+                    id="origin"
+                    value={origin}
+                    onChange={(e) => setOrigin(e.target.value)}
+                    required
+                    className="min-w-0 flex-1 border-none bg-transparent text-[0.95rem] text-ink outline-none"
+                  >
+                    <option value="" disabled>
+                      Select station
                     </option>
-                  ))}
-                </select>
+                    {stations.map((s) => (
+                      <option key={s.id} value={s.code} disabled={s.code === destination}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface text-route-accent shadow-[0_2px_8px_rgba(0,0,0,0.15)] hover:enabled:bg-bg sm:static sm:mb-px sm:h-10 sm:w-10 sm:flex-none sm:translate-y-0 sm:shadow-none"
+                onClick={handleSwap}
+                disabled={!origin && !destination}
+                aria-label="Swap origin and destination"
+              >
+                <SwapIcon />
+              </button>
+
+              <div className="flex min-w-0 flex-col gap-1.5 sm:flex-1">
+                <label htmlFor="destination" className="text-xs font-bold uppercase tracking-wide text-ink-soft">
+                  To
+                </label>
+                <div className="flex items-center gap-2 rounded-[10px] border border-border bg-surface px-3 py-2.5 text-ink-soft">
+                  <PinIcon />
+                  <select
+                    id="destination"
+                    value={destination}
+                    onChange={(e) => setDestination(e.target.value)}
+                    required
+                    className="min-w-0 flex-1 border-none bg-transparent text-[0.95rem] text-ink outline-none"
+                  >
+                    <option value="" disabled>
+                      Select station
+                    </option>
+                    {stations.map((s) => (
+                      <option key={s.id} value={s.code} disabled={s.code === origin}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
-            <button
-              type="button"
-              className="mb-px flex h-10 w-10 flex-none items-center justify-center rounded-full border border-border bg-surface text-route-accent hover:enabled:bg-bg"
-              onClick={handleSwap}
-              disabled={!origin && !destination}
-              aria-label="Swap origin and destination"
-            >
-              <SwapIcon />
-            </button>
-
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <label htmlFor="destination" className="text-xs font-bold uppercase tracking-wide text-ink-soft">
-                To
-              </label>
-              <div className="flex items-center gap-2 rounded-[10px] border border-border bg-surface px-3 py-2.5 text-ink-soft">
-                <PinIcon />
-                <select
-                  id="destination"
-                  value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
-                  required
-                  className="min-w-0 flex-1 border-none bg-transparent text-[0.95rem] text-ink outline-none"
-                >
-                  <option value="" disabled>
-                    Select station
-                  </option>
-                  {stations.map((s) => (
-                    <option key={s.id} value={s.code} disabled={s.code === origin}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <div className="flex min-w-0 flex-col gap-1.5 sm:flex-1">
               <label htmlFor="date" className="text-xs font-bold uppercase tracking-wide text-ink-soft">
                 Date
               </label>
@@ -179,7 +181,7 @@ export default function LandingSearch({ stations, searching, error, activeSearch
 
             <button
               type="submit"
-              className="flex h-11 flex-none items-center gap-2 whitespace-nowrap rounded-[10px] bg-route-accent px-5.5 font-bold text-white hover:enabled:bg-route-accent-dark"
+              className="flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-route-accent px-5.5 font-bold text-white hover:enabled:bg-route-accent-dark sm:w-auto sm:flex-none sm:rounded-[10px]"
               disabled={!canSearch}
             >
               <SearchIcon />
@@ -197,7 +199,7 @@ export default function LandingSearch({ stations, searching, error, activeSearch
         )}
 
         {stations.length > 0 && (
-          <div className="mx-auto flex max-w-225 flex-wrap justify-center gap-2.5">
+          <div className="mx-auto flex max-w-225 flex-wrap justify-start gap-2.5 sm:justify-center">
             {QUICK_ROUTES.map(({ origin: o, destination: d }) => {
               const active = origin === o && destination === d
               return (
