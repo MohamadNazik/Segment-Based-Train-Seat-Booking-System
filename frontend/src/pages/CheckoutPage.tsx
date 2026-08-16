@@ -53,6 +53,11 @@ export default function CheckoutPage() {
     setError(null)
     try {
       const booking = await createBooking(hold.hold_token, email, mobile)
+      // Replace the current (checkout) entry with a blank landing page, then
+      // push the confirmation on top of that - so browser back from
+      // confirmation can never return to this now-spent checkout form, and
+      // lands on a fresh search instead of the mid-flow seat list.
+      navigate('/', { replace: true })
       navigate(`/booking/${booking.id}`, { state: { booking } })
     } catch (err) {
       if (err instanceof ApiError && (err.status === 409 || err.status === 410)) {
