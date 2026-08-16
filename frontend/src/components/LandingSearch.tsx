@@ -61,7 +61,7 @@ export default function LandingSearch({ stations, searching, error, activeSearch
 
   return (
     <>
-      <section className="flex flex-col items-center justify-start px-6 pb-10 pt-20 text-center text-white" style={HERO_BACKGROUND}>
+      <section className="flex flex-col items-center justify-start px-6 pb-6 pt-20 text-center text-white" style={HERO_BACKGROUND}>
         <div className="w-full max-w-250">
           <h1 className="mb-3 text-[clamp(2rem,5vw,3.2rem)] font-extrabold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
             Book Your Seat for next journey
@@ -71,7 +71,7 @@ export default function LandingSearch({ stations, searching, error, activeSearch
           </p>
 
           <form
-            className="mt-5 flex w-full flex-col items-stretch gap-3 rounded-[18px] bg-[#f2efe8] p-5 text-left shadow-[0_20px_40px_rgba(0,0,0,0.25)] sm:flex-row sm:items-end"
+            className="relative z-10 -mb-16 mt-5 flex w-full flex-col items-stretch gap-3 rounded-[18px] bg-[#f2efe8] p-5 text-left shadow-[0_20px_40px_rgba(0,0,0,0.25)] sm:flex-row sm:items-end"
             onSubmit={(e) => {
               e.preventDefault()
               if (canSearch) onSearch(origin, destination, date)
@@ -169,7 +169,7 @@ export default function LandingSearch({ stations, searching, error, activeSearch
         </div>
       </section>
 
-      <div className="px-6 py-8 text-center">
+      <div className="px-6 pb-8 pt-20 text-center">
         {error && (
           <p className={ERROR_BANNER} role="alert">
             {error}
