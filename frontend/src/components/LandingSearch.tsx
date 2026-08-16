@@ -83,7 +83,7 @@ export default function LandingSearch({ stations, searching, error, activeSearch
 
   return (
     <>
-      <section className="flex flex-col items-center justify-start px-6 pb-8 pt-10 text-center text-white" style={HERO_BACKGROUND}>
+      <section className="flex flex-col items-center justify-start px-6 pb-10 pt-20 text-center text-white" style={HERO_BACKGROUND}>
         <div className="w-full max-w-250">
           <h1 className="mb-3 text-[clamp(2rem,5vw,3.2rem)] font-extrabold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
             Book Your Seat for next journey
