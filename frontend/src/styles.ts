@@ -1,9 +1,5 @@
-// A handful of exact Tailwind utility strings repeated identically across
-// several components (the same button look, the same page container).
-// Kept as plain strings - not wrapper components - so components still
-// apply them via a normal className, matching the "utility classes in
-// JSX" approach; this just avoids the same long string drifting slightly
-// out of sync if hand-copied into five different files.
+// Tailwind utility strings repeated identically across several components,
+// kept as plain constants (not wrapper components) to avoid drift.
 export const PAGE = 'mx-auto w-full max-w-[900px] px-6 pb-16 pt-8'
 export const PAGE_SUBTITLE = 'mb-6 text-ink-soft'
 export const EMPTY_STATE = 'py-8 text-ink-soft'

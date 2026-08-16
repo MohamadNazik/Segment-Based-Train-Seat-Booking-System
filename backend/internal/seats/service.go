@@ -8,10 +8,8 @@ import (
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/stations"
 )
 
-// ValidationError marks a failure caused by bad input (unknown station code,
-// wrong leg order, a past travel date) rather than an internal failure, so
-// callers - HTTP handlers today, the holds service later - can tell the two
-// apart and respond with 400 vs 500 without inspecting error strings.
+// ValidationError marks bad input (vs. an internal failure), so callers can
+// respond 400 vs 500 without inspecting error strings.
 type ValidationError struct {
 	msg string
 }
@@ -20,19 +18,13 @@ func (e *ValidationError) Error() string { return e.msg }
 
 func newValidationError(msg string) error { return &ValidationError{msg: msg} }
 
-// ErrSeatNotReserved marks a seat ID that doesn't exist, or exists but
-// belongs to an unreserved coach - either way, not something that can be
-// held or booked at the seat level.
+// ErrSeatNotReserved means the seat ID doesn't exist or isn't in a reserved coach.
 type ErrSeatNotReserved struct{}
 
 func (ErrSeatNotReserved) Error() string { return "seat not found or not reservable" }
 
-// HoldReader is the seats package's view of active holds - just enough to
-// compute availability and fragmentation pricing. Defined here (not in
-// cache) because Go convention is to declare interfaces where they're
-// consumed; cache.HoldStore satisfies this structurally without cache
-// importing seats, which is what keeps seats -> cache -> (nothing) and
-// holds -> seats, holds -> cache from ever forming a cycle.
+// HoldReader avoids an import cycle: cache.HoldStore satisfies this
+// structurally without cache importing seats.
 type HoldReader interface {
 	AllHolds(ctx context.Context) (map[string][]cache.HoldRange, error)
 }
@@ -55,8 +47,7 @@ func NewService(repo *Repo, stationsRepo *stations.Repo, holdReader HoldReader, 
 	}
 }
 
-// leg is a resolved origin/destination/date triple plus everything needed
-// to price any seat against it.
+// leg is a resolved origin/destination/date, ready for pricing.
 type leg struct {
 	travelDate     time.Time
 	originSeq      int
@@ -114,12 +105,10 @@ func (s *Service) resolveLeg(ctx context.Context, originCode, destCode string, t
 	}, nil
 }
 
-// priceOne decides one seat's status and fare for lg, given its existing
-// confirmed bookings and active holds. Booked beats pending: a confirmed
-// booking always wins status-wise even if a (now-meaningless) hold also
-// happens to be present. Fare accounts for both as potential fragmentation
-// neighbors, per the plan - a pending hold boxes in capacity just as much
-// as a confirmed booking does, until it's released or expires.
+// priceOne decides one seat's status and fare for lg. A confirmed booking
+// always beats a pending hold for status, but both count as fragmentation
+// neighbors when pricing - a hold boxes in capacity just as much until
+// it's released or expires.
 func (s *Service) priceOne(lg leg, bookings, holds []BookedRange) (status string, fare float64) {
 	requested := BookedRange{TravelDate: lg.travelDate, OriginSeq: lg.originSeq, DestinationSeq: lg.destinationSeq}
 
@@ -165,10 +154,8 @@ func toBookedRanges(holds []cache.HoldRange) []BookedRange {
 	return out
 }
 
-// Availability resolves a leg by station code and date, returning every
-// reserved seat that's actually available for it with its priced fare.
-// Booked and pending seats are deliberately left out of the response -
-// only bookable seats are ever shown to the passenger.
+// Availability returns every reserved seat actually available for the leg,
+// with its priced fare. Booked/pending seats are filtered out.
 func (s *Service) Availability(ctx context.Context, originCode, destCode string, travelDate time.Time) ([]Availability, error) {
 	lg, err := s.resolveLeg(ctx, originCode, destCode, travelDate)
 	if err != nil {
@@ -214,9 +201,7 @@ func (s *Service) Availability(ctx context.Context, originCode, destCode string,
 	return result, nil
 }
 
-// LegPrice is one specific seat's resolved leg, status, and fare - what the
-// holds service needs to decide whether a hold can be created and, if so,
-// what to lock in.
+// LegPrice is one seat's resolved leg, status, and fare, for hold creation.
 type LegPrice struct {
 	TravelDate     time.Time
 	OriginSeq      int
@@ -225,11 +210,8 @@ type LegPrice struct {
 	Fare           float64
 }
 
-// CheckSeat is Availability narrowed to a single seat, reused by the holds
-// service so hold creation is checked and priced with the exact same rules
-// a passenger already saw in the availability list. Unlike Availability,
-// this returns the seat's actual status (including "booked"/"pending")
-// rather than filtering - the caller needs to know why a hold was refused.
+// CheckSeat is Availability narrowed to one seat, returning its actual
+// status (including booked/pending) so the caller can explain a refusal.
 func (s *Service) CheckSeat(ctx context.Context, seatID, originCode, destCode string, travelDate time.Time) (LegPrice, error) {
 	lg, err := s.resolveLeg(ctx, originCode, destCode, travelDate)
 	if err != nil {

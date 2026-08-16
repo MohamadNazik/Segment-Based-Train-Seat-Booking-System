@@ -5,12 +5,9 @@ import { getBooking } from '../api/client'
 import Confirmation from '../components/Confirmation'
 import { ERROR_BANNER, PAGE } from '../styles'
 
-// A confirmed booking is a persisted resource (unlike a checkout hold), so
-// this route is always backed by a real fetch - refreshing or sharing the
-// link works, not just the moment right after paying. The just-completed
-// booking is still handed over via navigation state so the first paint
-// isn't a loading flash, but the fetch is the source of truth and
-// overwrites it once it resolves.
+// Booking (unlike a hold) is persisted, so this route always backs itself
+// with a real fetch - refresh/share works. navigation state just avoids a
+// loading flash right after paying; the fetch overwrites it once it resolves.
 interface IncomingState {
   booking?: Booking
 }

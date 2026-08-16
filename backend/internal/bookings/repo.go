@@ -13,11 +13,8 @@ import (
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/apiformat"
 )
 
-// ErrConflict means the exclusion constraint rejected the insert - the seat
-// is no longer available for this leg/direction/date. This is the
-// defense-in-depth backstop: it should be rare in practice, since a hold
-// already reserved the seat, but it's what guarantees a double-booking can
-// never actually be persisted regardless of what happens upstream.
+// ErrConflict means the exclusion constraint rejected the insert - the
+// defense-in-depth backstop guaranteeing a double-booking is never persisted.
 var ErrConflict = errors.New("seat is no longer available for this leg")
 
 const exclusionViolationCode = "23P01"
@@ -31,9 +28,8 @@ func NewRepo(pool *pgxpool.Pool) *Repo {
 }
 
 // Insert creates a confirmed booking. origin/destinationSeq are stored as
-// given (the passenger's actual boarding/alighting order), so the database's
-// generated is_outbound/segment columns and exclusion constraint apply
-// exactly as they do for any other booking.
+// given (actual boarding/alighting order) so the generated is_outbound/
+// segment columns and exclusion constraint apply normally.
 func (r *Repo) Insert(ctx context.Context, seatID string, originSeq, destinationSeq int, travelDate time.Time, email, mobile string, fare float64) (Booking, error) {
 	var b Booking
 	var storedTravelDate time.Time
@@ -59,9 +55,8 @@ func (r *Repo) Insert(ctx context.Context, seatID string, originSeq, destination
 // ErrNotFound means no booking exists with the given ID.
 var ErrNotFound = errors.New("booking not found")
 
-// GetByID looks up a confirmed booking by its ID - the only thing standing
-// in for auth in this no-login system is the ID itself being an
-// unguessable UUID, the same trust model as a real ticket reference number.
+// GetByID looks up a confirmed booking by its ID - the unguessable UUID
+// itself is the only auth in this no-login system, like a ticket reference.
 func (r *Repo) GetByID(ctx context.Context, id string) (Booking, error) {
 	var b Booking
 	var storedTravelDate time.Time

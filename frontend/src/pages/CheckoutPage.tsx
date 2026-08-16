@@ -5,21 +5,15 @@ import { ApiError, cancelHold, createBooking } from '../api/client'
 import { useCountdown } from '../hooks/useCountdown'
 import { BTN_PRIMARY, BTN_SECONDARY, ERROR_BANNER } from '../styles'
 
-// Handed over via navigation state, not the URL - a hold token is a
-// one-time proof of "you created this hold" and shouldn't end up in a
-// shareable/bookmarkable link the way the search itself does. returnTo is
-// the search+coach URL the seat was picked from, so releasing the hold
-// (cancel, expiry, or a rejected finalize) can land the passenger back on
-// that same seat list rather than a blank landing page.
+// Handed over via navigation state, not the URL - a hold token shouldn't be
+// shareable. returnTo is the seat list to return to when the hold is released.
 interface CheckoutState {
   hold: Hold
   seat: AvailableSeat
   returnTo: string
 }
 
-// Same two-layer gradient treatment as the landing hero - see
-// LandingSearch.tsx for why this stays an inline style instead of a
-// Tailwind utility.
+// Same gradient as the landing hero - see LandingSearch.tsx.
 const HERO_BACKGROUND = {
   backgroundImage:
     'linear-gradient(to bottom, rgba(10,20,15,0.55) 0%, rgba(10,20,15,0.25) 45%, rgba(10,20,15,0.65) 100%), ' +
@@ -43,9 +37,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null)
   const [cancelling, setCancelling] = useState(false)
 
-  // A direct/typed visit to /checkout (or any navigation here that didn't
-  // come from picking a seat) has no hold to check out - bounce back to
-  // search instead of rendering a broken form.
+  // No hold to check out (e.g. a direct visit) - bounce back to search.
   useEffect(() => {
     if (!state) navigate('/', { replace: true })
   }, [state, navigate])

@@ -19,18 +19,10 @@ type FareParams struct {
 	FragmentationRate float64
 }
 
-// CalculateFare prices a candidate leg on a seat: the base distance fare,
-// plus a surcharge for any capacity this choice boxes in between the new
-// leg and the seat's nearest neighboring bookings *in the same travel
-// direction* - an opposite-direction booking on the same seat is a
-// different trip and never counts as a neighbor here.
-//
-// A side only counts as boxed in - and therefore wasted - when it's bounded
-// by another same-direction booking on that seat rather than by the line's
-// actual start or end: capacity still open toward the line's terminus is
-// just ordinary remaining capacity, not lost revenue, however large it is.
-// A seat with no bookings in this direction never carries a surcharge,
-// regardless of which sub-leg is requested.
+// CalculateFare prices a candidate leg: base distance fare, plus a
+// surcharge for any capacity it boxes in against the seat's nearest
+// same-direction neighboring booking. A side only counts as boxed in when
+// bounded by another booking, not by the line's actual start/end.
 func CalculateFare(p FareParams, seatBookings []BookedRange) float64 {
 	candidate := BookedRange{TravelDate: p.TravelDate, OriginSeq: p.OriginSeq, DestinationSeq: p.DestinationSeq}
 	candidateMin, candidateMax := candidate.minMax()

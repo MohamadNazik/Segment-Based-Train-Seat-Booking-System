@@ -13,11 +13,8 @@ interface Props {
   stations: Station[]
   searching: boolean
   error: string | null
-  /** The currently active search (if any) - e.g. restored from the URL on
-   * load/refresh, or from browser back/forward. The form fields stay in
-   * sync with this, so a refresh doesn't silently blank out what's
-   * actually being shown below. Freely editing the fields doesn't affect
-   * this until a new search is actually submitted. */
+  /** The currently active search, if any (e.g. restored from the URL). Form
+   * fields stay in sync with this but aren't overwritten by free editing. */
   activeSearch: ActiveSearch | null
   onSearch: (origin: string, destination: string, date: string) => void
 }
@@ -26,10 +23,8 @@ function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-// Stand-in for a real photo of the line - see README for swapping in a
-// licensed image instead. Kept as an inline style since a two-layer
-// gradient with several rgba stops doesn't have a clean Tailwind utility
-// equivalent worth fighting the arbitrary-value syntax for.
+// Stand-in for a real photo of the line - see README. Inline style since a
+// two-layer gradient doesn't map cleanly to a Tailwind utility.
 const HERO_BACKGROUND = {
   backgroundImage:
     'linear-gradient(to bottom, rgba(10,20,15,0.55) 0%, rgba(10,20,15,0.25) 45%, rgba(10,20,15,0.65) 100%), ' +
@@ -41,11 +36,7 @@ export default function LandingSearch({ stations, searching, error, activeSearch
   const [destination, setDestination] = useState(activeSearch?.destination ?? '')
   const [date, setDate] = useState(activeSearch?.date ?? today())
 
-  // Keep the fields in sync with whatever search is actually active - e.g.
-  // once a URL-driven search resolves after mount, or when browser
-  // back/forward changes it. Only fires when activeSearch itself changes,
-  // never on every keystroke, so freely editing the fields in between two
-  // real searches is never overwritten mid-edit.
+  // Only fires when activeSearch itself changes, not on every keystroke.
   useEffect(() => {
     setOrigin(activeSearch?.origin ?? '')
     setDestination(activeSearch?.destination ?? '')

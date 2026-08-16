@@ -16,11 +16,8 @@ import (
 
 var ErrHoldNotFound = errors.New("hold not found")
 
-// HoldRange is a raw, storage-level view of an active hold's leg - deliberately
-// dependency-free (no import of the seats package) so it can sit below both
-// seats (which reads holds for three-state availability and fragmentation
-// pricing) and holds (which writes them), without either package importing
-// the other.
+// HoldRange is a storage-level view of an active hold's leg, kept
+// dependency-free of the seats package to avoid an import cycle.
 type HoldRange struct {
 	TravelDate     time.Time
 	OriginSeq      int
@@ -49,10 +46,9 @@ type holdPayload struct {
 const holdKeyPrefix = "hold:"
 const lockKeyPrefix = "lock:seat:"
 
-// HoldStore is the low-level Redis-backed storage for temporary seat holds.
-// It knows nothing about fare calculation, overlap rules, or the seats
-// domain - callers (seats.Service for reading, holds.Service for writing)
-// supply already-decided data and get back plain storage primitives.
+// HoldStore is Redis-backed storage for temporary seat holds. It knows
+// nothing about fare calculation or overlap rules - callers supply
+// already-decided data and get back plain storage primitives.
 type HoldStore struct {
 	client *redis.Client
 }
@@ -62,8 +58,8 @@ func NewHoldStore(client *redis.Client) *HoldStore {
 }
 
 // Create writes a new hold with the given TTL and returns it, including a
-// fresh opaque token that's both the Redis key suffix and the caller's proof
-// of ownership for later cancel/finalize requests.
+// fresh opaque token - both the Redis key suffix and the caller's proof of
+// ownership for later cancel/finalize requests.
 func (s *HoldStore) Create(ctx context.Context, seatID string, originSeq, destinationSeq int, travelDate time.Time, fare float64, ttl time.Duration) (Hold, error) {
 	token, err := randomToken()
 	if err != nil {
@@ -149,10 +145,8 @@ func (s *HoldStore) Cancel(ctx context.Context, token string) error {
 	return nil
 }
 
-// AllHolds returns every currently-active hold, grouped by seat ID. Holds
-// are few and short-lived by design (TTL-bounded), so a single SCAN sweep
-// is simpler and cheap enough compared to maintaining a secondary per-seat
-// index that would need its own expiry bookkeeping.
+// AllHolds returns every active hold, grouped by seat ID. A single SCAN
+// sweep is enough since holds are few and short-lived (TTL-bounded).
 func (s *HoldStore) AllHolds(ctx context.Context) (map[string][]HoldRange, error) {
 	result := make(map[string][]HoldRange)
 
@@ -189,12 +183,10 @@ func (s *HoldStore) AllHolds(ctx context.Context) (map[string][]HoldRange, error
 	return result, nil
 }
 
-// Lock serializes hold-creation attempts for a single seat, closing the race
+// Lock serializes hold-creation attempts for one seat, closing the race
 // where two concurrent requests both see "no overlap" and both create a
-// hold. It's a short-lived, single-instance Redis lock (SET NX PX + a
-// compare-and-delete unlock) - not a full multi-node Redlock, which isn't
-// needed here since there's one Redis instance. Returns an unlock function
-// that must be called (typically via defer) once the caller is done.
+// hold. A single-instance SET NX PX lock is enough (no Redlock needed) -
+// caller must call the returned unlock func once done.
 func (s *HoldStore) Lock(ctx context.Context, seatID string) (func(context.Context) error, error) {
 	key := lockKeyPrefix + seatID
 	value, err := randomToken()
@@ -230,8 +222,8 @@ func (s *HoldStore) Lock(ctx context.Context, seatID string) (func(context.Conte
 	return nil, fmt.Errorf("seat %s is busy, try again", seatID)
 }
 
-// unlockScript only deletes the lock if it still holds the value we set,
-// so we never release a lock some other request acquired after ours expired.
+// unlockScript deletes the lock only if it still holds our value, so we
+// never release a lock someone else acquired after ours expired.
 var unlockScript = redis.NewScript(`
 if redis.call("get", KEYS[1]) == ARGV[1] then
 	return redis.call("del", KEYS[1])

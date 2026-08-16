@@ -1,7 +1,6 @@
 import type { AvailableSeat, Booking, Hold, Station } from './types'
 
-// ApiError carries the HTTP status alongside the backend's plain-text error
-// message, so callers can branch on status (e.g. 409 conflict vs 410 gone)
+// ApiError carries the HTTP status so callers can branch (e.g. 409 vs 410)
 // without re-parsing strings.
 export class ApiError extends Error {
   status: number

@@ -9,9 +9,7 @@ import (
 	"github.com/MohamadNazik/Segment-Based-Train-Seat-Booking-System/backend/internal/stations"
 )
 
-// Deps holds the handlers NewRouter wires up. Kept as a struct rather than
-// a long parameter list so adding a new resource's handler later is a
-// one-line change here, not a signature change everywhere it's called.
+// Deps holds the handlers NewRouter wires up.
 type Deps struct {
 	Stations *stations.Handler
 	Seats    *seats.Handler

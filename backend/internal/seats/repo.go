@@ -22,8 +22,7 @@ func NewRepo(pool *pgxpool.Pool) *Repo {
 	return &Repo{pool: pool}
 }
 
-// ListReserved returns every seat belonging to a reserved coach. Unreserved
-// coaches have no rows in seats at all, so nothing to exclude here.
+// ListReserved returns every seat belonging to a reserved coach.
 func (r *Repo) ListReserved(ctx context.Context) ([]ReservedSeat, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT s.id, c.code, s.seat_number
@@ -48,9 +47,7 @@ func (r *Repo) ListReserved(ctx context.Context) ([]ReservedSeat, error) {
 	return out, rows.Err()
 }
 
-// GetReserved looks up a single seat by ID, but only if it belongs to a
-// reserved coach - unreserved seats don't exist as rows at all, but a
-// caller-supplied ID could still point at something else entirely.
+// GetReserved looks up a seat by ID, but only if it belongs to a reserved coach.
 func (r *Repo) GetReserved(ctx context.Context, seatID string) (ReservedSeat, bool, error) {
 	var s ReservedSeat
 	err := r.pool.QueryRow(ctx, `
@@ -68,10 +65,9 @@ func (r *Repo) GetReserved(ctx context.Context, seatID string) (ReservedSeat, bo
 	return s, true, nil
 }
 
-// BookingsForSeats returns every booking on the given seats, grouped by
-// seat ID - including ones that don't overlap the leg being queried, since
-// the fragmentation fare calc needs each seat's nearest neighboring
-// bookings, not just the ones that conflict.
+// BookingsForSeats returns every booking on the given seats, grouped by seat
+// ID - including non-overlapping ones, since fragmentation pricing needs
+// each seat's nearest neighbors, not just conflicts.
 func (r *Repo) BookingsForSeats(ctx context.Context, seatIDs []string) (map[string][]BookedRange, error) {
 	out := make(map[string][]BookedRange, len(seatIDs))
 	if len(seatIDs) == 0 {
