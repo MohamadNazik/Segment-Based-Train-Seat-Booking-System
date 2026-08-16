@@ -69,7 +69,7 @@ func Load() (*Config, error) {
 	}
 	cfg.FragmentationRate = fragmentationRate
 
-	ttlSeconds, err := strconv.Atoi(getEnv("HOLD_TTL_SECONDS", "600"))
+	ttlSeconds, err := strconv.Atoi(getEnv("HOLD_TTL_SECONDS", "300"))
 	if err != nil {
 		return nil, fmt.Errorf("invalid HOLD_TTL_SECONDS: %w", err)
 	}

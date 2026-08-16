@@ -1,23 +1,34 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import type { AvailableSeat, Booking, Hold, Station } from '../api/types'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import type { AvailableSeat, Booking, Station } from '../api/types'
 import { ApiError, getAvailability, getStations, createHold } from '../api/client'
 import LandingSearch from '../components/LandingSearch'
 import CoachList from '../components/CoachList'
 import SeatList from '../components/SeatList'
-import Checkout from '../components/Checkout'
 import Confirmation from '../components/Confirmation'
 import { ERROR_BANNER, PAGE } from '../styles'
+
+// Handed back from /checkout via navigation state when a booking succeeds
+// or a hold is released (cancelled, expired, or rejected at finalize) -
+// never via the URL, since neither belongs in this page's own shareable
+// search state.
+interface IncomingState {
+  booking?: Booking
+  notice?: string
+}
 
 // The search (from/to/date) and the selected coach both live in the URL's
 // query string via react-router's useSearchParams - not component state -
 // so they're shareable/bookmarkable and browser back/forward work for
-// free, without any hand-written history/popstate logic. Checkout and
-// confirmation deliberately stay as plain component state instead: a hold
-// carries a token that shouldn't end up in a shareable URL, and neither
-// step needs to be revisitable via back/forward the way search results do.
+// free, without any hand-written history/popstate logic. Checkout lives on
+// its own route (/checkout) instead: a hold carries a token that shouldn't
+// end up in a shareable URL, so it travels as navigation state rather than
+// a query param, and confirmation is handled back here once checkout hands
+// control back.
 export default function BookingPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const location = useLocation()
+  const navigate = useNavigate()
 
   const origin = searchParams.get('from') ?? ''
   const destination = searchParams.get('to') ?? ''
@@ -29,8 +40,6 @@ export default function BookingPage() {
   const [stationsError, setStationsError] = useState<string | null>(null)
 
   const [seats, setSeats] = useState<AvailableSeat[]>([])
-  const [selectedSeat, setSelectedSeat] = useState<AvailableSeat | null>(null)
-  const [hold, setHold] = useState<Hold | null>(null)
   const [booking, setBooking] = useState<Booking | null>(null)
 
   const [searching, setSearching] = useState(false)
@@ -58,6 +67,31 @@ export default function BookingPage() {
       setSearching(false)
     }
   }
+
+  // Consumes whatever /checkout handed back on its way here, then clears
+  // it (replace + state: null) so refreshing this same history entry
+  // doesn't replay it. `notice` (present, possibly empty) is the release
+  // signal - it always means the seat list needs a fresh fetch, since the
+  // just-released seat (or one someone else grabbed meanwhile) may have
+  // changed. `booking` means checkout succeeded and there's nothing left
+  // to fetch; the confirmation screen replaces the search UI entirely.
+  // The extra deps beyond `location` just mean this also (harmlessly)
+  // re-checks on a plain search change, since the `!state` guard makes
+  // that a no-op.
+  useEffect(() => {
+    const state = location.state as IncomingState | null
+    if (!state) return
+    if (state.booking) setBooking(state.booking)
+    if (state.notice !== undefined) {
+      if (state.notice) setNotice(state.notice)
+      if (hasSearch) {
+        fetchAvailability(origin, destination, date).catch(() => {
+          // stale list is better than none; the next Proceed attempt will surface any real error
+        })
+      }
+    }
+    navigate(location.pathname + location.search, { replace: true, state: null })
+  }, [location, origin, destination, date, hasSearch, navigate])
 
   // Refetches whenever the search params change - a form submission, the
   // initial URL already carrying a search (shared link / refresh), a
@@ -105,9 +139,8 @@ export default function BookingPage() {
     setHolding(true)
     setNotice(null)
     try {
-      const h = await createHold(seat.seat_id, origin, destination, date)
-      setSelectedSeat(seat)
-      setHold(h)
+      const hold = await createHold(seat.seat_id, origin, destination, date)
+      navigate('/checkout', { state: { hold, seat, returnTo: location.pathname + location.search } })
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         setNotice('That seat was just taken by another passenger. Availability has been refreshed.')
@@ -117,23 +150,6 @@ export default function BookingPage() {
       }
     } finally {
       setHolding(false)
-    }
-  }
-
-  function handleConfirmed(b: Booking) {
-    setBooking(b)
-    setHold(null)
-    setSelectedSeat(null)
-  }
-
-  async function handleReleased(message: string) {
-    setHold(null)
-    setSelectedSeat(null)
-    if (message) setNotice(message)
-    if (hasSearch) {
-      await fetchAvailability(origin, destination, date).catch(() => {
-        // stale list is better than none; the next Proceed attempt will surface any real error
-      })
     }
   }
 
@@ -152,10 +168,6 @@ export default function BookingPage() {
 
   if (booking) {
     return <Confirmation booking={booking} onNewSearch={handleNewSearch} />
-  }
-
-  if (hold && selectedSeat) {
-    return <Checkout hold={hold} seat={selectedSeat} onConfirmed={handleConfirmed} onReleased={handleReleased} />
   }
 
   return (
