@@ -237,16 +237,16 @@ All routes are under `/api/v1/`.
   creep beyond what the assignment asks for. A booking's ID (an unguessable UUID) is what
   stands in for access control on `GET /bookings/{id}`.
 
-## Out of scope
+## Screenshots
 
-Deliberately not implemented, to keep focus on the core requirements above:
+**Search → coach list**, on the landing page:
 
-- Seat-map visualization (showing which specific seats are taken, not just available count).
-- Waitlisting for a fully-booked leg.
-- An admin/operator view.
-- Real payment integration.
-- Multi-seat checkout (booking several seats in one hold/transaction).
-- Automated concurrency tests - correctness was instead verified manually against a real
-  Postgres + Redis (overlap rejection, adjacent-segment acceptance, reverse-direction
-  independence, per-seat lock exclusivity, and real concurrent-request races for both hold
-  creation and booking finalization).
+![Landing page - search form and coach list](docs/screenshots/landing.jpg)
+
+**Checkout**, with the live countdown before the hold expires:
+
+![Checkout page - passenger details and mock payment](docs/screenshots/checkout.jpg)
+
+**Confirmation**, on its own shareable `/booking/{id}` route:
+
+![Booking confirmation page](docs/screenshots/confirm.png)
