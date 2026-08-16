@@ -17,8 +17,8 @@ export function useCountdown(expiresAt: string, onExpire: () => void): number {
       }
     }
 
-    tick()
     const interval = setInterval(tick, 1000)
+    tick()
     return () => clearInterval(interval)
   }, [expiresAt])
 
