@@ -6,6 +6,8 @@ COPY . .
 RUN CGO_ENABLED=0 go build -o /out/server ./cmd/server
 
 FROM alpine:3.20
-COPY --from=builder /out/server /usr/local/bin/server
+RUN adduser -D -u 10001 appuser
+COPY --from=builder --chown=appuser:appuser /out/server /usr/local/bin/server
+USER appuser
 EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/server"]
